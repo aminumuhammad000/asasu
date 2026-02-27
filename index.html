@@ -662,7 +662,11 @@
         // 🛠️ CONFIGURATION — fill these in to go live
         // =========================================================
 
-        const API_BASE_URL = "https://api.asasurealty-commission.com.ng/api";
+        // Detect environment and set BASE URL
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE_URL = isLocal
+            ? "http://localhost:5000/api"
+            : "https://api.asasurealty-commission.com.ng/api";
 
         // =========================================================
         // API Fetch Helpers
@@ -676,6 +680,24 @@
             });
             if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
             return await res.json();
+        }
+
+        async function checkBackendHealth() {
+            try {
+                // Try to reach the claims endpoint as a simple health check
+                const url = `${API_BASE_URL}/claims`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) throw new Error('API unreachable');
+                console.log('✅ Backend connection verified');
+            } catch (err) {
+                console.error('❌ Backend health check failed:', err);
+                showToast('Connection Warning', 'Unable to reach the server. Please check your internet or retry later.', 'error');
+            }
         }
 
         async function refreshData() {
@@ -763,7 +785,7 @@
             document.getElementById('viewToggle').classList.remove('hidden');
 
             // Initial data pull
-            refreshData();
+            checkBackendHealth();
             // Polling for updates every 60s
             setInterval(refreshData, 60000);
         });

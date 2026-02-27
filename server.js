@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const path = require('path');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const multer = require('multer');
@@ -243,6 +244,11 @@ app.post('/api/admin/login', (req, res) => {
     } else {
         res.status(401).json({ success: false, error: 'Invalid password' });
     }
+});
+
+// Serve Frontend (Optional fallback/API health check)
+app.get('/', (req, res) => {
+    res.send('🚀 ASASU Realty API is running!');
 });
 
 const PORT = process.env.PORT || 5000;
