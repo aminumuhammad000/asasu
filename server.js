@@ -246,6 +246,40 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
+// Admin Custom Email
+app.post('/api/admin/send-email', async (req, res) => {
+    const { password, to, subject, message } = req.body;
+
+    // Simple password check
+    if (password !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized access' });
+    }
+
+    if (!to || !subject || !message) {
+        return res.status(400).json({ error: 'Recipient, subject, and message are required' });
+    }
+
+    const mailOptions = {
+        from: `ASASU Realty Support <${process.env.EMAIL_USER}>`,
+        to: to,
+        subject: subject,
+        text: message
+    };
+
+    try {
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            await transporter.sendMail(mailOptions);
+            console.log(`📧 Custom Email Sent to ${to}`);
+            res.json({ success: true, message: 'Email sent successfully' });
+        } else {
+            res.status(500).json({ error: 'Email service not configured' });
+        }
+    } catch (err) {
+        console.error('❌ Custom Email Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Serve Frontend (Optional fallback/API health check)
 app.get('/', (req, res) => {
     res.send('🚀 ASASU Realty API is running!');

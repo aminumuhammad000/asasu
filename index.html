@@ -646,6 +646,90 @@
         </div>
     </div>
 
+    <!-- Ticket Detail Modal -->
+    <div id="ticketDetailModal" class="modal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-5 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Ticket Details</h3>
+                    <p class="text-orange-100 text-sm" id="td_ticketId">TKT-000000</p>
+                </div>
+                <button onclick="closeTicketDetailModal()" class="text-white/80 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <p class="text-xs text-slate-400 font-semibold uppercase mb-1">Agent ID</p>
+                        <p class="font-bold text-slate-900" id="td_agentId">—</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <p class="text-xs text-slate-400 font-semibold uppercase mb-1">Type</p>
+                        <p class="font-bold text-slate-900 capitalize" id="td_type">—</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <p class="text-xs text-slate-400 font-semibold uppercase mb-1">Submitted</p>
+                        <p class="font-semibold text-slate-700 text-sm" id="td_date">—</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <p class="text-xs text-slate-400 font-semibold uppercase mb-1">Status</p>
+                        <p class="font-bold" id="td_status">—</p>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <p class="text-xs text-slate-400 font-semibold uppercase mb-1">Description</p>
+                    <p class="text-slate-700 text-sm whitespace-pre-wrap" id="td_description">—</p>
+                </div>
+            </div>
+            <div class="px-6 pb-6 flex gap-3">
+                <button onclick="closeTicketDetailModal()"
+                    class="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors text-sm">Close</button>
+                <button id="td_emailBtn"
+                    class="flex-1 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors text-sm">
+                    <i class="fas fa-envelope mr-1"></i> Email Agent
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-orange-500 px-6 py-5 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Send Email to Agent</h3>
+                    <p class="text-blue-100 text-sm" id="emailModalRecipient">To: agent@email.com</p>
+                </div>
+                <button onclick="closeEmailModal()" class="text-white/80 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Subject</label>
+                    <input type="text" id="emailSubject"
+                        class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                        placeholder="Enter email subject">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Message</label>
+                    <textarea id="emailMessage" rows="6"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                        placeholder="Type your message here..."></textarea>
+                </div>
+            </div>
+            <div class="px-6 pb-6 flex gap-3">
+                <button onclick="closeEmailModal()"
+                    class="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors text-sm">Cancel</button>
+                <button id="sendEmailBtn" onclick="sendAgentEmail()"
+                    class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-paper-plane mr-1"></i> Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div id="toast" class="fixed bottom-4 right-4 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
         <div class="bg-slate-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3">
@@ -774,6 +858,7 @@
         let claims = [];
         let tickets = [];
         let isAdmin = false;
+        let adminPassword = ''; // Store password for session
         let currentFile = null;
         let currentAgentId = localStorage.getItem('asasu_agent_id') || '';
 
@@ -1079,6 +1164,10 @@
                                 <button class="menu-danger" onclick="deleteTicket('${t._id}'); closeAllMenus()">
                                     <i class="fas fa-trash-alt"></i> Delete Ticket
                                 </button>
+                                <hr class="my-1 border-slate-100">
+                                <button onclick="openEmailFromTicket('${t.agentId}'); closeAllMenus()">
+                                    <i class="fas fa-envelope text-orange-500"></i> Email Agent
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1096,8 +1185,28 @@
         window.viewTicket = function (id) {
             const t = tickets.find(x => x._id === id);
             if (!t) return;
-            alert(`Ticket: ${t.id}\nAgent: ${t.agentId}\nCategory: ${t.type}\n\nDescription:\n${t.description}`);
-        }
+
+            document.getElementById('td_ticketId').textContent = t.id;
+            document.getElementById('td_agentId').textContent = t.agentId;
+            document.getElementById('td_type').textContent = t.type;
+            document.getElementById('td_date').textContent = t.date;
+            document.getElementById('td_description').textContent = t.description;
+
+            const statusEl = document.getElementById('td_status');
+            statusEl.textContent = t.status;
+            statusEl.className = 'font-bold ' + (t.status === 'Open' ? 'text-orange-500' : 'text-green-500');
+
+            document.getElementById('td_emailBtn').onclick = () => {
+                closeTicketDetailModal();
+                openEmailFromTicket(t.agentId);
+            };
+
+            document.getElementById('ticketDetailModal').classList.add('active');
+        };
+
+        window.closeTicketDetailModal = function () {
+            document.getElementById('ticketDetailModal').classList.remove('active');
+        };
 
         window.deleteTicket = async function (id) {
             if (!confirm('Permanently delete this ticket?')) return;
@@ -1163,6 +1272,7 @@
                         return;
                     }
 
+                    adminPassword = pwd; // Store for this session
                     document.getElementById('agentView').classList.add('hidden');
                     document.getElementById('adminView').classList.remove('hidden');
                     document.getElementById('viewToggle').innerHTML = '<i class="fas fa-user"></i><span>Agent View</span>';
@@ -1235,6 +1345,9 @@
                     ? `<button onclick="downloadFile('${c.fileData}', '${c.fileName}'); closeAllMenus()"><i class="fas fa-download text-green-500"></i> Download File</button>`
                     : `<button class="menu-disabled" disabled><i class="fas fa-download"></i> No File</button>`
                 }
+                                <button onclick="openEmailModal('${c.email}', '${c.agentName}'); closeAllMenus()">
+                                    <i class="fas fa-envelope text-orange-500"></i> Email Agent
+                                </button>
                                 <hr>
                                 <button class="menu-danger" onclick="deleteClaim('${c._id}'); closeAllMenus()">
                                     <i class="fas fa-trash"></i> Delete
@@ -1369,6 +1482,67 @@
             document.getElementById('claimModal').classList.remove('active');
         };
 
+        // =========================================================
+        // Email Modal Logic
+        // =========================================================
+        let currentEmailRecipient = '';
+
+        window.openEmailModal = function (email, name) {
+            if (!email) {
+                showToast('Error', 'No email address found for this agent', 'error');
+                return;
+            }
+            currentEmailRecipient = email;
+            document.getElementById('emailModalRecipient').textContent = `To: ${name} (${email})`;
+            document.getElementById('emailSubject').value = 'ASASU Realty - Update on your Commission Claim';
+            document.getElementById('emailMessage').value = `Hello ${name},\n\n`;
+            document.getElementById('emailModal').classList.add('active');
+        };
+
+        window.closeEmailModal = function () {
+            document.getElementById('emailModal').classList.remove('active');
+        };
+
+        window.sendAgentEmail = async function () {
+            const subject = document.getElementById('emailSubject').value.trim();
+            const message = document.getElementById('emailMessage').value.trim();
+            const btn = document.getElementById('sendEmailBtn');
+
+            if (!subject || !message) {
+                showToast('Error', 'Subject and message are required', 'error');
+                return;
+            }
+
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<div class="loader"></div>';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/admin/send-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password: adminPassword,
+                        to: currentEmailRecipient,
+                        subject: subject,
+                        message: message
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to send email');
+
+                showToast('Success', 'Email sent to agent successfully');
+                closeEmailModal();
+            } catch (err) {
+                console.error(err);
+                showToast('Error', err.message, 'error');
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        };
+
         window.deleteClaim = async function (id) {
             if (!confirm(`Permanently delete this claim?`)) return;
             try {
@@ -1398,6 +1572,20 @@
             document.querySelectorAll('.action-menu.open').forEach(m => m.classList.remove('open'));
         };
 
+        window.openEmailFromTicket = function (agentId) {
+            // Find a claim with this agentId to get their email
+            const claim = claims.find(c => c.agentId === agentId);
+            if (claim && claim.email) {
+                openEmailModal(claim.email, claim.agentName || agentId);
+            } else {
+                // If no claim found, ask for email or show error
+                const email = prompt(`No email found for Agent ${agentId}. Please enter email address:`);
+                if (email) {
+                    openEmailModal(email, agentId);
+                }
+            }
+        };
+
         document.addEventListener('click', window.closeAllMenus);
 
         // =========================================================
@@ -1420,6 +1608,12 @@
         });
         document.getElementById('claimModal').addEventListener('click', e => {
             if (e.target.id === 'claimModal') window.closeClaimModal();
+        });
+        document.getElementById('emailModal').addEventListener('click', e => {
+            if (e.target.id === 'emailModal') window.closeEmailModal();
+        });
+        document.getElementById('ticketDetailModal').addEventListener('click', e => {
+            if (e.target.id === 'ticketDetailModal') window.closeTicketDetailModal();
         });
     </script>
 </body>
