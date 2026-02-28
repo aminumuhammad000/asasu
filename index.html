@@ -1298,13 +1298,16 @@
         // Admin
         // =========================================================
         window.toggleView = async function () {
-            isAdmin = !isAdmin;
-            if (isAdmin) {
+            const btn = document.getElementById('viewToggle');
+            const originalHTML = btn.innerHTML;
+
+            if (!isAdmin) {
                 const pwd = prompt('Enter admin password:');
-                if (!pwd) {
-                    isAdmin = false;
-                    return;
-                }
+                if (!pwd) return;
+
+                // Show loading state
+                btn.innerHTML = '<div class="loader w-4 h-4"></div><span>Verifying...</span>';
+                btn.disabled = true;
 
                 try {
                     const response = await fetch(`${API_BASE_URL}/admin/login`, {
@@ -1316,23 +1319,28 @@
 
                     if (!result.success) {
                         showToast('Error', result.error || 'Wrong password', 'error');
-                        isAdmin = false;
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
                         return;
                     }
 
+                    isAdmin = true;
                     adminPassword = pwd; // Store for this session
                     document.getElementById('agentView').classList.add('hidden');
                     document.getElementById('adminView').classList.remove('hidden');
-                    document.getElementById('viewToggle').innerHTML = '<i class="fas fa-user"></i><span>Agent View</span>';
+                    btn.innerHTML = '<i class="fas fa-user"></i><span>Agent View</span>';
                     refreshData();
                 } catch (err) {
                     showToast('Error', 'Server error during login', 'error');
-                    isAdmin = false;
+                    btn.innerHTML = originalHTML;
+                } finally {
+                    btn.disabled = false;
                 }
             } else {
+                isAdmin = false;
                 document.getElementById('adminView').classList.add('hidden');
                 document.getElementById('agentView').classList.remove('hidden');
-                document.getElementById('viewToggle').innerHTML = '<i class="fas fa-lock"></i><span>Admin View</span>';
+                btn.innerHTML = '<i class="fas fa-lock"></i><span>Admin View</span>';
             }
         };
 
