@@ -861,6 +861,8 @@
         let adminPassword = ''; // Store password for session
         let currentFile = null;
         let currentAgentId = localStorage.getItem('asasu_agent_id') || '';
+        let currentAgentName = localStorage.getItem('asasu_agent_name') || '';
+        let currentAgentEmail = localStorage.getItem('asasu_agent_email') || '';
 
         // =========================================================
         // Initialize UI
@@ -868,6 +870,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             setupDragDrop();
             document.getElementById('viewToggle').classList.remove('hidden');
+
+            // Pre-fill agent details if they exist
+            if (currentAgentId) document.getElementById('agentId').value = currentAgentId;
+            if (currentAgentName) document.getElementById('agentName').value = currentAgentName;
+            if (currentAgentEmail) document.getElementById('agentEmail').value = currentAgentEmail;
 
             // Initial data pull
             checkBackendHealth();
