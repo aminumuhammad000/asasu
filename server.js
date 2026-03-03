@@ -50,15 +50,27 @@ const TicketSchema = new mongoose.Schema({
     id: String,
     type: String,
     agentId: String,
+    agentEmail: String,
     description: String,
     date: String,
     timestamp: Number,
     status: { type: String, default: 'Open' },
-    responses: [Object] // Array of response objects if needed in future
+    responses: [Object], // Array of response objects if needed in future
+    adminResponse: String
+});
+
+const MessageSchema = new mongoose.Schema({
+    id: String,
+    agentId: String,
+    text: String,
+    date: String,
+    timestamp: Number,
+    sender: { type: String, default: 'Admin' }
 });
 
 const Claim = mongoose.model('Claim', ClaimSchema);
 const Ticket = mongoose.model('Ticket', TicketSchema);
+const Message = mongoose.model('Message', MessageSchema);
 
 // Email Transporter
 const transporter = nodemailer.createTransport({
@@ -114,6 +126,9 @@ app.get('/api/claims', async (req, res) => {
 
 app.post('/api/claims', async (req, res) => {
     try {
+        if (!req.body.email) {
+            return res.status(400).json({ error: 'Agent email is compulsory' });
+        }
         const claim = new Claim(req.body);
         await claim.save();
 
@@ -202,7 +217,11 @@ app.delete('/api/claims/:id', async (req, res) => {
 
 app.get('/api/tickets', async (req, res) => {
     try {
-        const tickets = await Ticket.find().sort({ timestamp: -1 });
+        const query = {};
+        if (req.query.agentId) {
+            query.agentId = req.query.agentId;
+        }
+        const tickets = await Ticket.find(query).sort({ timestamp: -1 });
         res.json(tickets);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -211,6 +230,9 @@ app.get('/api/tickets', async (req, res) => {
 
 app.post('/api/tickets', async (req, res) => {
     try {
+        if (!req.body.agentEmail) {
+            return res.status(400).json({ error: 'Agent email is compulsory' });
+        }
         const ticket = new Ticket(req.body);
         await ticket.save();
         res.status(201).json(ticket);
@@ -221,7 +243,12 @@ app.post('/api/tickets', async (req, res) => {
 
 app.patch('/api/tickets/:id', async (req, res) => {
     try {
-        const ticket = await Ticket.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const { status, adminResponse } = req.body;
+        const updateData = {};
+        if (status) updateData.status = status;
+        if (adminResponse) updateData.adminResponse = adminResponse;
+
+        const ticket = await Ticket.findByIdAndUpdate(req.params.id, updateData, { new: true });
         res.json(ticket);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -276,6 +303,90 @@ app.post('/api/admin/send-email', async (req, res) => {
         }
     } catch (err) {
         console.error('❌ Custom Email Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Broadcast Email
+app.post('/api/admin/broadcast-email', async (req, res) => {
+    const { password, subject, message } = req.body;
+
+    if (password !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized access' });
+    }
+
+    try {
+        // Collect all unique agent emails from claims
+        const agents = await Claim.distinct('email');
+        const recipients = agents.filter(email => email && email.includes('@'));
+
+        if (recipients.length === 0) {
+            return res.status(400).json({ error: 'No agent emails found' });
+        }
+
+        const mailOptions = {
+            from: `ASASU Realty <${process.env.EMAIL_USER}>`,
+            bcc: recipients.join(','),
+            subject: subject,
+            text: message
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`📧 Broadcast Email Sent to ${recipients.length} agents`);
+        res.json({ success: true, count: recipients.length });
+    } catch (err) {
+        console.error('❌ Broadcast Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Update Password
+app.post('/api/admin/update-password', async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (currentPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Incorrect current password' });
+    }
+
+    if (!newPassword || newPassword.length < 5) {
+        return res.status(400).json({ error: 'New password too short' });
+    }
+
+    // UPDATE ENV VARIABLE IN MEMORY (Note: This doesn't persist to .env file automatically in many node setups without extra logic)
+    process.env.ADMIN_PASSWORD = newPassword;
+    console.log('✅ Admin password updated');
+    res.json({ success: true });
+});
+
+// Admin Send Direct Message
+app.post('/api/admin/send-message', async (req, res) => {
+    const { password, agentId, text } = req.body;
+
+    if (password !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const message = new Message({
+            id: 'MSG-' + Date.now().toString().slice(-6),
+            agentId,
+            text,
+            date: new Date().toLocaleString(),
+            timestamp: Date.now()
+        });
+        await message.save();
+        res.status(201).json(message);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Agent Get Messages
+app.get('/api/messages/:agentId', async (req, res) => {
+    try {
+        const messages = await Message.find({ agentId: req.params.agentId }).sort({ timestamp: -1 });
+        res.json(messages);
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

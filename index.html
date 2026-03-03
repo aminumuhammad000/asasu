@@ -336,10 +336,10 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Email Address (for
-                                        notifications)</label>
+                                        notifications) *</label>
                                     <input type="email" id="agentEmail"
                                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                                        placeholder="your@email.com">
+                                        placeholder="your@email.com" required>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">Number of Clients in
@@ -400,6 +400,17 @@
                         Your Recent Submissions
                     </h3>
                     <div id="submissionsList" class="space-y-3">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Messages from Admin -->
+                <div class="mt-8 bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+                    <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="fas fa-envelope-open-text text-orange-500"></i>
+                        Messages from Admin
+                    </h3>
+                    <div id="messagesList" class="space-y-3">
                         <!-- Populated by JavaScript -->
                     </div>
                 </div>
@@ -480,6 +491,14 @@
                             Support Tickets <span id="ticketTabBadge"
                                 class="ml-2 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
                         </button>
+                        <button onclick="switchTab('comms')" id="tabComms"
+                            class="flex-1 px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-700">
+                            Communication
+                        </button>
+                        <button onclick="switchTab('settings')" id="tabSettings"
+                            class="flex-1 px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-700">
+                            Settings
+                        </button>
                     </div>
                 </div>
 
@@ -518,6 +537,97 @@
                 <div id="ticketsPanel" class="hidden p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="adminTicketsList">
                         <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Communication Tab -->
+                <div id="commsPanel" class="hidden p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Broadcast Email -->
+                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                            <h4 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-bullhorn text-blue-600"></i>
+                                Broadcast Email to All Agents
+                            </h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Subject</label>
+                                    <input type="text" id="bc_subject"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500"
+                                        placeholder="e.g., Important System Update">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Message</label>
+                                    <textarea id="bc_message" rows="5"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-blue-500"
+                                        placeholder="Type your broadcast message..."></textarea>
+                                </div>
+                                <button onclick="sendBroadcast()" id="bc_btn"
+                                    class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Send Broadcast
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Direct Message -->
+                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                            <h4 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-comment-dots text-orange-600"></i>
+                                Send Message to Specific Agent
+                            </h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Agent ID</label>
+                                    <input type="text" id="dm_agentId"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-orange-500"
+                                        placeholder="e.g., AGT-2024-001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-1">Message</label>
+                                    <textarea id="dm_message" rows="5"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-orange-500"
+                                        placeholder="Type your private message..."></textarea>
+                                </div>
+                                <button onclick="sendDirectMessage()" id="dm_btn"
+                                    class="w-full bg-orange-500 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
+                                    <i class="fas fa-comment"></i>
+                                    Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settingsPanel" class="hidden p-6">
+                    <div class="max-w-md mx-auto bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                        <h4 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-key text-purple-600"></i>
+                            Update Admin Password
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Current Password</label>
+                                <input type="password" id="set_current"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">New Password</label>
+                                <input type="password" id="set_new"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Confirm New
+                                    Password</label>
+                                <input type="password" id="set_confirm"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:border-purple-500">
+                            </div>
+                            <button onclick="updateAdminPassword()"
+                                class="w-full bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                                Update Password
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -617,10 +727,16 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Your Agent ID / Phone</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Your Agent ID / Phone *</label>
                             <input type="text" id="ticketAgentId"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none"
                                 placeholder="So we can look up your account">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Your Email Address *</label>
+                            <input type="email" id="ticketEmail"
+                                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none"
+                                placeholder="For status notifications">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Description *</label>
@@ -680,6 +796,13 @@
                 <div class="bg-slate-50 rounded-xl p-4">
                     <p class="text-xs text-slate-400 font-semibold uppercase mb-1">Description</p>
                     <p class="text-slate-700 text-sm whitespace-pre-wrap" id="td_description">—</p>
+                </div>
+                <div id="td_responseArea" class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <p class="text-[10px] text-blue-600 font-bold uppercase mb-2 leading-none">Your Response (Optional)
+                    </p>
+                    <textarea id="td_adminResponse" rows="3"
+                        class="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-400 outline-none text-sm"
+                        placeholder="Type your response to the agent..."></textarea>
                 </div>
             </div>
             <div class="px-6 pb-6 flex flex-wrap gap-3">
@@ -803,6 +926,12 @@
                 claims = await backendFetch('/claims');
                 tickets = await backendFetch('/tickets');
 
+                // Fetch messages if agent ID is set
+                if (currentAgentId) {
+                    const messages = await backendFetch(`/messages/${currentAgentId}`);
+                    renderMessages(messages);
+                }
+
                 updateStats();
                 renderSubmissions();
                 renderAdminTables();
@@ -893,7 +1022,12 @@
         // =========================================================
         document.addEventListener('DOMContentLoaded', () => {
             setupDragDrop();
-            document.getElementById('viewToggle').classList.remove('hidden');
+
+            // Hidden Admin Access via ?manage=true
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('manage') === 'true') {
+                document.getElementById('viewToggle').classList.remove('hidden');
+            }
 
             // Pre-fill agent details if they exist
             if (currentAgentId) document.getElementById('agentId').value = currentAgentId;
@@ -999,9 +1133,10 @@
         function validateForm() {
             const name = document.getElementById('agentName').value;
             const id = document.getElementById('agentId').value;
+            const email = document.getElementById('agentEmail').value;
             const count = document.getElementById('clientCount').value;
             const btn = document.getElementById('submitBtn');
-            if (currentFile && name && id && count) {
+            if (currentFile && name && id && email && count) {
                 btn.disabled = false;
                 btn.className = 'w-full mt-6 bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer';
             } else {
@@ -1089,6 +1224,8 @@
         // =========================================================
         window.showTicketModal = function () {
             document.getElementById('ticketModal').classList.add('active');
+            if (currentAgentEmail) document.getElementById('ticketEmail').value = currentAgentEmail;
+            if (currentAgentId) document.getElementById('ticketAgentId').value = currentAgentId;
             renderMyTickets();
         };
 
@@ -1099,10 +1236,11 @@
         window.submitTicket = async function () {
             const agentId = document.getElementById('ticketAgentId').value.trim();
             const type = document.getElementById('ticketType').value;
+            const email = document.getElementById('ticketEmail').value.trim();
             const desc = document.getElementById('ticketDescription').value.trim();
 
-            if (!agentId || !desc) {
-                showToast('Error', 'Please fill all fields', 'error');
+            if (!agentId || !email || !desc) {
+                showToast('Error', 'Please fill all required fields', 'error');
                 return;
             }
 
@@ -1115,6 +1253,7 @@
                 id: ticketId,
                 type,
                 agentId,
+                agentEmail: email,
                 description: desc,
                 date: new Date().toLocaleString(),
                 timestamp: Date.now(),
@@ -1156,7 +1295,32 @@
                     </div>
                     <p class="text-sm text-slate-600 mb-2 capitalize"><i class="fas fa-tag mr-1"></i> ${t.type}</p>
                     <p class="text-sm text-slate-700 mb-2">${t.description}</p>
-                    <p class="text-xs text-slate-400">${t.date}</p>
+                    ${t.adminResponse ? `
+                    <div class="mt-3 p-3 bg-white rounded-lg border border-slate-200">
+                        <p class="text-[10px] font-bold text-blue-600 uppercase mb-1">Response from Admin:</p>
+                        <p class="text-sm text-slate-700">${t.adminResponse}</p>
+                    </div>
+                    ` : ''}
+                    <p class="text-xs text-slate-400 mt-2">${t.date}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderMessages(data) {
+            const list = document.getElementById('messagesList');
+            if (!list) return;
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="text-slate-500 text-center py-4">No messages yet</p>';
+                return;
+            }
+            list.innerHTML = data.map(m => `
+                <div class="p-4 bg-orange-50 border border-orange-100 rounded-xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                        <span class="text-xs font-bold text-orange-600 uppercase tracking-wider">New Message</span>
+                    </div>
+                    <p class="text-sm text-slate-700 mb-2">${m.text}</p>
+                    <p class="text-[10px] text-slate-400 font-medium">${m.date}</p>
                 </div>
             `).join('');
         }
@@ -1249,6 +1413,9 @@
                 deleteTicket(t._id);
             };
 
+            document.getElementById('td_adminResponse').value = t.adminResponse || '';
+            document.getElementById('td_responseArea').classList.toggle('hidden', t.status !== 'Open');
+
             document.getElementById('ticketDetailModal').classList.add('active');
         };
 
@@ -1269,10 +1436,14 @@
         }
 
         window.resolveTicket = async function (id) {
+            const adminResponse = document.getElementById('td_adminResponse').value.trim();
             try {
                 await backendFetch(`/tickets/${id}`, {
                     method: 'PATCH',
-                    body: { status: 'Resolved' }
+                    body: {
+                        status: 'Resolved',
+                        adminResponse: adminResponse || undefined
+                    }
                 });
                 showToast('Success', 'Ticket marked as resolved');
                 refreshData();
@@ -1345,17 +1516,102 @@
         };
 
         window.switchTab = function (tab) {
-            if (tab === 'claims') {
-                document.getElementById('claimsPanel').classList.remove('hidden');
-                document.getElementById('ticketsPanel').classList.add('hidden');
-                document.getElementById('tabClaims').className = 'flex-1 px-6 py-4 text-sm font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50';
-                document.getElementById('tabTickets').className = 'flex-1 px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-700';
-            } else {
-                document.getElementById('claimsPanel').classList.add('hidden');
-                document.getElementById('ticketsPanel').classList.remove('hidden');
-                document.getElementById('tabTickets').className = 'flex-1 px-6 py-4 text-sm font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50';
-                document.getElementById('tabClaims').className = 'flex-1 px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-700';
-                renderTickets();
+            // Hide all panels
+            ['claimsPanel', 'ticketsPanel', 'commsPanel', 'settingsPanel'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            // Reset all tab button styles
+            ['tabClaims', 'tabTickets', 'tabComms', 'tabSettings'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = 'flex-1 px-6 py-4 text-sm font-bold text-slate-500 hover:text-slate-700';
+            });
+
+            // Show active panel and style button
+            const panelId = tab === 'claims' ? 'claimsPanel' : tab === 'tickets' ? 'ticketsPanel' : tab === 'comms' ? 'commsPanel' : 'settingsPanel';
+            const btnId = tab === 'claims' ? 'tabClaims' : tab === 'tickets' ? 'tabTickets' : tab === 'comms' ? 'tabComms' : 'tabSettings';
+
+            document.getElementById(panelId).classList.remove('hidden');
+            document.getElementById(btnId).className = 'flex-1 px-6 py-4 text-sm font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50';
+
+            if (tab === 'tickets') renderTickets();
+        };
+
+        window.sendBroadcast = async function () {
+            const subject = document.getElementById('bc_subject').value.trim();
+            const message = document.getElementById('bc_message').value.trim();
+            const btn = document.getElementById('bc_btn');
+            if (!subject || !message) return showToast('Error', 'Fill all fields', 'error');
+
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<div class="loader"></div>';
+            btn.disabled = true;
+
+            try {
+                await fetch(`${API_BASE_URL}/admin/broadcast-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPassword, subject, message })
+                });
+                showToast('Success', 'Broadcast email sent');
+                document.getElementById('bc_subject').value = '';
+                document.getElementById('bc_message').value = '';
+            } catch (err) {
+                showToast('Error', err.message, 'error');
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        window.sendDirectMessage = async function () {
+            const agentId = document.getElementById('dm_agentId').value.trim();
+            const text = document.getElementById('dm_message').value.trim();
+            const btn = document.getElementById('dm_btn');
+            if (!agentId || !text) return showToast('Error', 'Fill all fields', 'error');
+
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<div class="loader"></div>';
+            btn.disabled = true;
+
+            try {
+                await fetch(`${API_BASE_URL}/admin/send-message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPassword, agentId, text })
+                });
+                showToast('Success', 'Message sent to agent');
+                document.getElementById('dm_agentId').value = '';
+                document.getElementById('dm_message').value = '';
+            } catch (err) {
+                showToast('Error', err.message, 'error');
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        window.updateAdminPassword = async function () {
+            const currentPassword = document.getElementById('set_current').value;
+            const newPassword = document.getElementById('set_new').value;
+            const confirm = document.getElementById('set_confirm').value;
+
+            if (newPassword !== confirm) return showToast('Error', 'Passwords do not match', 'error');
+
+            try {
+                await fetch(`${API_BASE_URL}/admin/update-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                showToast('Success', 'Password updated');
+                adminPassword = newPassword;
+                document.getElementById('set_current').value = '';
+                document.getElementById('set_new').value = '';
+                document.getElementById('set_confirm').value = '';
+            } catch (err) {
+                showToast('Error', err.message, 'error');
             }
         };
 
