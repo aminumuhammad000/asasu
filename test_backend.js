@@ -27,20 +27,21 @@ async function test() {
         // 2. Get All Claims
         console.log('\n--- Test 2: Get Claims ---');
         const getRes = await axios.get(`${API_URL}/claims`);
-        console.log('✅ Claims Found:', getRes.data.length);
+        const claims = getRes.data.data;
+        console.log('✅ Claims Found:', claims.length);
 
         // 3. Update Status to Rejected (Rejecting)
         console.log('\n--- Test 3: Reject Claim ---');
         await axios.patch(`${API_URL}/claims/${claimId}`, { status: 'Rejected' });
         const updatedRes = await axios.get(`${API_URL}/claims`);
-        const updatedClaim = updatedRes.data.find(c => c._id === claimId);
+        const updatedClaim = updatedRes.data.data.find(c => c._id === claimId);
         console.log('✅ Claim Status:', updatedClaim.status);
 
         // 4. Delete Claim
         console.log('\n--- Test 4: Delete Claim ---');
         await axios.delete(`${API_URL}/claims/${claimId}`);
-        const deleteRes = await axios.get(`${API_URL}/claims`);
-        const found = deleteRes.data.find(c => c._id === claimId);
+        const finalRes = await axios.get(`${API_URL}/claims`);
+        const found = finalRes.data.data.find(c => c._id === claimId);
         if (!found) console.log('✅ Claim Deleted Successfully');
 
         console.log('\n✨ All backend tests passed!');

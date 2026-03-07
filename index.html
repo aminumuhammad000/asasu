@@ -900,7 +900,7 @@
         // =========================================================
 
         // Detect environment and set BASE URL
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname;
         const API_BASE_URL = isLocal
             ? "http://localhost:5000/api"
             : "https://api.asasurealty-commission.com.ng/api";
@@ -961,9 +961,11 @@
                     // Agent Refresh
                     const claimsRes = await backendFetch(`/claims?agentId=${currentAgentId}`);
                     claims = claimsRes.data || claimsRes; // Compatibility
+                    if (claimsRes.pagination) claimsPagination = claimsRes.pagination;
 
                     const ticketsRes = await backendFetch(`/tickets?agentId=${currentAgentId}`);
                     tickets = ticketsRes.data || ticketsRes; // Compatibility
+                    if (ticketsRes.pagination) ticketsPagination = ticketsRes.pagination;
                 }
 
                 // Fetch messages if agent ID is set
@@ -1114,6 +1116,7 @@
 
             // Initial data pull
             checkBackendHealth();
+            refreshData(); // Added to load data on startup
             // Polling for updates every 60s
             setInterval(refreshData, 60000);
         });
@@ -1791,7 +1794,7 @@
                 }).length;
 
                 const totalCommission = claims.filter(c => c.status !== 'Rejected' && c.status !== 'Paid')
-                    .reduce((acc, c) => acc + (c.clientCount * 1000), 0);
+                    .reduce((acc, c) => acc + (Number(c.clientCount || 0) * 1000), 0);
 
                 document.getElementById('pendingCount').textContent = pending;
                 document.getElementById('openTickets').textContent = openT;

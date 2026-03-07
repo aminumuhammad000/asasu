@@ -399,7 +399,7 @@ app.get('/api/admin/stats', async (req, res) => {
         }).length;
 
         const totalCommission = claims.filter(c => c.status !== 'Rejected' && c.status !== 'Paid')
-            .reduce((acc, c) => acc + (c.clientCount * 1000), 0);
+            .reduce((acc, c) => acc + (Number(c.clientCount || 0) * 1000), 0);
 
         res.json({
             pendingCount: pending,
