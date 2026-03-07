@@ -953,11 +953,11 @@
                     const searchQuery = document.getElementById('searchClaims') ? document.getElementById('searchClaims').value : '';
                     const claimsRes = await backendFetch(`/claims?page=${currentClaimsPage}&search=${encodeURIComponent(searchQuery)}`);
                     claims = claimsRes.data || claimsRes;
-                    claimsPagination = claimsRes.pagination;
+                    claimsPagination = claimsRes.pagination || { total: claims.length, page: 1, limit: 10, pages: Math.ceil(claims.length / 10) };
 
                     const ticketsRes = await backendFetch(`/tickets?page=${currentTicketsPage}`);
                     tickets = ticketsRes.data || ticketsRes;
-                    ticketsPagination = ticketsRes.pagination;
+                    ticketsPagination = ticketsRes.pagination || { total: tickets.length, page: 1, limit: 10, pages: Math.ceil(tickets.length / 10) };
                 } else {
                     // Agent Refresh
                     const claimsRes = await backendFetch(`/claims?agentId=${currentAgentId}`);
@@ -1024,9 +1024,13 @@
             document.getElementById('ticketsPrevBtn').disabled = currentTicketsPage <= 1;
             document.getElementById('ticketsNextBtn').disabled = currentTicketsPage >= ticketsPagination.pages;
 
-            // Hide pagination if only one page
-            document.getElementById('claimsPagination').style.display = claimsPagination.pages > 1 ? 'flex' : 'none';
-            document.getElementById('ticketsPagination').style.display = ticketsPagination.pages > 1 ? 'flex' : 'none';
+            // Show pagination count always; hide prev/next controls if only 1 page
+            document.getElementById('claimsPagination').style.display = 'flex';
+            document.getElementById('ticketsPagination').style.display = 'flex';
+            const claimsBtns = document.getElementById('claimsPagination').querySelector('.flex.gap-2');
+            const ticketsBtns = document.getElementById('ticketsPagination').querySelector('.flex.gap-2');
+            if (claimsBtns) claimsBtns.style.display = (claimsPagination.pages || 1) > 1 ? 'flex' : 'none';
+            if (ticketsBtns) ticketsBtns.style.display = (ticketsPagination.pages || 1) > 1 ? 'flex' : 'none';
         }
 
         // =========================================================
@@ -1787,11 +1791,12 @@
 
         function updateStats() {
             if (isAdmin && adminStats) {
-                document.getElementById('pendingCount').textContent = adminStats.pendingCount;
-                document.getElementById('openTickets').textContent = adminStats.openTicketsCount;
-                document.getElementById('processedCount').textContent = adminStats.processedThisMonth;
-                document.getElementById('totalCommission').textContent = '₦' + adminStats.totalCommission.toLocaleString();
-                document.getElementById('openTicketsAgent').textContent = adminStats.openTicketsCount;
+                const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                safeSet('pendingCount', adminStats.pendingCount);
+                safeSet('openTickets', adminStats.openTicketsCount);
+                safeSet('processedCount', adminStats.processedThisMonth);
+                safeSet('totalCommission', '₦' + Number(adminStats.totalCommission).toLocaleString());
+                safeSet('openTicketsAgent', adminStats.openTicketsCount);
             } else {
                 const pending = claims.filter(c => c.status === 'Pending').length;
                 const openT = tickets.filter(t => t.status === 'Open').length;
