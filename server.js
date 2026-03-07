@@ -391,11 +391,14 @@ app.get('/api/admin/stats', async (req, res) => {
         const pending = claims.filter(c => c.status === 'Pending').length;
         const openT = tickets.filter(t => t.status === 'Open').length;
 
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
         const monthlyCount = claims.filter(c => {
             if (!c.timestamp) return false;
-            const month = new Date(c.timestamp).getMonth();
-            const currentMonth = new Date().getMonth();
-            return month === currentMonth && c.status === 'Paid';
+            const d = new Date(c.timestamp);
+            return d.getMonth() === currentMonth && d.getFullYear() === currentYear && c.status === 'Paid';
         }).length;
 
         const totalCommission = claims.filter(c => c.status !== 'Rejected' && c.status !== 'Paid')
