@@ -531,12 +531,34 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="claimsPagination" class="mt-6 flex justify-between items-center text-sm">
+                        <span class="text-slate-500" id="claimsCountText">Showing 0 of 0 claims</span>
+                        <div class="flex gap-2">
+                            <button onclick="changeClaimsPage(-1)" id="claimsPrevBtn"
+                                class="px-3 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors">Previous</button>
+                            <span class="px-4 py-1 font-bold text-blue-600 bg-blue-50 rounded-lg"
+                                id="claimsCurrentPage">1</span>
+                            <button onclick="changeClaimsPage(1)" id="claimsNextBtn"
+                                class="px-3 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors">Next</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Tickets Tab -->
                 <div id="ticketsPanel" class="hidden p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="adminTicketsList">
                         <!-- Populated by JS -->
+                    </div>
+                    <div id="ticketsPagination" class="mt-6 flex justify-between items-center text-sm">
+                        <span class="text-slate-500" id="ticketsCountText">Showing 0 of 0 tickets</span>
+                        <div class="flex gap-2">
+                            <button onclick="changeTicketsPage(-1)" id="ticketsPrevBtn"
+                                class="px-3 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors">Previous</button>
+                            <span class="px-4 py-1 font-bold text-orange-600 bg-orange-50 rounded-lg"
+                                id="ticketsCurrentPage">1</span>
+                            <button onclick="changeTicketsPage(1)" id="ticketsNextBtn"
+                                class="px-3 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors">Next</button>
+                        </div>
                     </div>
                 </div>
 
@@ -923,8 +945,26 @@
             if (icon) icon.classList.add('fa-spin');
 
             try {
-                claims = await backendFetch('/claims');
-                tickets = await backendFetch('/tickets');
+                if (isAdmin) {
+                    // Admin Refresh
+                    adminStats = await backendFetch('/admin/stats');
+
+                    const searchQuery = document.getElementById('searchClaims') ? document.getElementById('searchClaims').value : '';
+                    const claimsRes = await backendFetch(`/claims?page=${currentClaimsPage}&search=${encodeURIComponent(searchQuery)}`);
+                    claims = claimsRes.data;
+                    claimsPagination = claimsRes.pagination;
+
+                    const ticketsRes = await backendFetch(`/tickets?page=${currentTicketsPage}`);
+                    tickets = ticketsRes.data;
+                    ticketsPagination = ticketsRes.pagination;
+                } else {
+                    // Agent Refresh
+                    const claimsRes = await backendFetch(`/claims?agentId=${currentAgentId}`);
+                    claims = claimsRes.data || claimsRes; // Compatibility
+
+                    const ticketsRes = await backendFetch(`/tickets?agentId=${currentAgentId}`);
+                    tickets = ticketsRes.data || ticketsRes; // Compatibility
+                }
 
                 // Fetch messages if agent ID is set
                 if (currentAgentId) {
@@ -939,6 +979,7 @@
                 checkTicketBadge();
 
                 if (isAdmin) {
+                    updatePaginationUI();
                     showToast('Success', 'Dashboard refreshed');
                 }
             } catch (err) {
@@ -950,6 +991,38 @@
                 if (btn) btn.disabled = false;
                 if (icon) icon.classList.remove('fa-spin');
             }
+        }
+
+        window.changeClaimsPage = function (delta) {
+            const newPage = currentClaimsPage + delta;
+            if (newPage < 1 || newPage > claimsPagination.pages) return;
+            currentClaimsPage = newPage;
+            refreshData();
+        };
+
+        window.changeTicketsPage = function (delta) {
+            const newPage = currentTicketsPage + delta;
+            if (newPage < 1 || newPage > ticketsPagination.pages) return;
+            currentTicketsPage = newPage;
+            refreshData();
+        };
+
+        function updatePaginationUI() {
+            // Claims Pagination
+            document.getElementById('claimsCurrentPage').textContent = claimsPagination.page || 1;
+            document.getElementById('claimsCountText').textContent = `Showing ${(claimsPagination.page - 1) * claimsPagination.limit + 1 || 0} - ${Math.min(claimsPagination.page * claimsPagination.limit, claimsPagination.total) || 0} of ${claimsPagination.total || 0} claims`;
+            document.getElementById('claimsPrevBtn').disabled = currentClaimsPage <= 1;
+            document.getElementById('claimsNextBtn').disabled = currentClaimsPage >= claimsPagination.pages;
+
+            // Tickets Pagination
+            document.getElementById('ticketsCurrentPage').textContent = ticketsPagination.page || 1;
+            document.getElementById('ticketsCountText').textContent = `Showing ${(ticketsPagination.page - 1) * ticketsPagination.limit + 1 || 0} - ${Math.min(ticketsPagination.page * ticketsPagination.limit, ticketsPagination.total) || 0} of ${ticketsPagination.total || 0} tickets`;
+            document.getElementById('ticketsPrevBtn').disabled = currentTicketsPage <= 1;
+            document.getElementById('ticketsNextBtn').disabled = currentTicketsPage >= ticketsPagination.pages;
+
+            // Hide pagination if only one page
+            document.getElementById('claimsPagination').style.display = claimsPagination.pages > 1 ? 'flex' : 'none';
+            document.getElementById('ticketsPagination').style.display = ticketsPagination.pages > 1 ? 'flex' : 'none';
         }
 
         // =========================================================
@@ -1010,6 +1083,11 @@
         // =========================================================
         let claims = [];
         let tickets = [];
+        let currentClaimsPage = 1;
+        let currentTicketsPage = 1;
+        let claimsPagination = { total: 0, pages: 1 };
+        let ticketsPagination = { total: 0, pages: 1 };
+        let adminStats = null;
         let isAdmin = false;
         let adminPassword = ''; // Store password for session
         let currentFile = null;
@@ -1497,6 +1575,8 @@
 
                     isAdmin = true;
                     adminPassword = pwd; // Store for this session
+                    currentClaimsPage = 1;
+                    currentTicketsPage = 1;
                     document.getElementById('agentView').classList.add('hidden');
                     document.getElementById('adminView').classList.remove('hidden');
                     btn.innerHTML = '<i class="fas fa-user"></i><span>Agent View</span>';
@@ -1693,17 +1773,34 @@
         };
 
         function updateStats() {
-            const pending = claims.filter(c => c.status === 'Pending').length;
-            const processed = claims.filter(c => c.status === 'Paid').length;
-            const openTickets = tickets.filter(t => t.status === 'Open').length;
-            document.getElementById('pendingCount').textContent = pending;
-            document.getElementById('processedCount').textContent = processed;
-            document.getElementById('openTickets').textContent = openTickets;
+            if (isAdmin && adminStats) {
+                document.getElementById('pendingCount').textContent = adminStats.pendingCount;
+                document.getElementById('openTickets').textContent = adminStats.openTicketsCount;
+                document.getElementById('processedCount').textContent = adminStats.processedThisMonth;
+                document.getElementById('totalCommission').textContent = '₦' + adminStats.totalCommission.toLocaleString();
+                document.getElementById('openTicketsAgent').textContent = adminStats.openTicketsCount;
+            } else {
+                const pending = claims.filter(c => c.status === 'Pending').length;
+                const openT = tickets.filter(t => t.status === 'Open').length;
 
-            // Only count Paid or Pending/Reviewed claims, exclude Rejected
-            const validClaims = claims.filter(c => c.status !== 'Rejected');
-            const total = validClaims.reduce((sum, c) => sum + (parseInt(c.clientCount || 0) * 5000), 0);
-            document.getElementById('totalCommission').textContent = '₦' + total.toLocaleString();
+                const monthlyCount = claims.filter(c => {
+                    if (!c.timestamp) return false;
+                    const month = new Date(c.timestamp).getMonth();
+                    const currentMonth = new Date().getMonth();
+                    return month === currentMonth && c.status === 'Paid';
+                }).length;
+
+                const totalCommission = claims.filter(c => c.status !== 'Rejected' && c.status !== 'Paid')
+                    .reduce((acc, c) => acc + (c.clientCount * 1000), 0);
+
+                document.getElementById('pendingCount').textContent = pending;
+                document.getElementById('openTickets').textContent = openT;
+                document.getElementById('processedCount').textContent = monthlyCount;
+                document.getElementById('totalCommission').textContent = '₦' + totalCommission.toLocaleString();
+
+                const agentTicketEl = document.getElementById('openTicketsAgent');
+                if (agentTicketEl) agentTicketEl.textContent = openT;
+            }
         }
 
         function renderSubmissions() {
@@ -1734,10 +1831,8 @@
         }
 
         window.filterClaims = function () {
-            const term = document.getElementById('searchClaims').value.toLowerCase();
-            document.querySelectorAll('#adminClaimsTable tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-            });
+            currentClaimsPage = 1;
+            refreshData();
         };
 
         window.exportData = function () {

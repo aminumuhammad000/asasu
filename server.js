@@ -117,8 +117,35 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 app.get('/api/claims', async (req, res) => {
     try {
-        const claims = await Claim.find().sort({ timestamp: -1 });
-        res.json(claims);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const query = {};
+        if (req.query.agentId) {
+            query.agentId = req.query.agentId;
+        }
+        if (req.query.search) {
+            const s = req.query.search;
+            query.$or = [
+                { id: { $regex: s, $options: 'i' } },
+                { agentName: { $regex: s, $options: 'i' } },
+                { agentId: { $regex: s, $options: 'i' } }
+            ];
+        }
+
+        const total = await Claim.countDocuments(query);
+        const claims = await Claim.find(query).sort({ timestamp: -1 }).skip(skip).limit(limit);
+
+        res.json({
+            data: claims,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -217,12 +244,27 @@ app.delete('/api/claims/:id', async (req, res) => {
 
 app.get('/api/tickets', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
         const query = {};
         if (req.query.agentId) {
             query.agentId = req.query.agentId;
         }
-        const tickets = await Ticket.find(query).sort({ timestamp: -1 });
-        res.json(tickets);
+
+        const total = await Ticket.countDocuments(query);
+        const tickets = await Ticket.find(query).sort({ timestamp: -1 }).skip(skip).limit(limit);
+
+        res.json({
+            data: tickets,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -336,6 +378,36 @@ app.post('/api/admin/broadcast-email', async (req, res) => {
         res.json({ success: true, count: recipients.length });
     } catch (err) {
         console.error('❌ Broadcast Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin Stats
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        const claims = await Claim.find();
+        const tickets = await Ticket.find();
+
+        const pending = claims.filter(c => c.status === 'Pending').length;
+        const openT = tickets.filter(t => t.status === 'Open').length;
+
+        const monthlyCount = claims.filter(c => {
+            if (!c.timestamp) return false;
+            const month = new Date(c.timestamp).getMonth();
+            const currentMonth = new Date().getMonth();
+            return month === currentMonth && c.status === 'Paid';
+        }).length;
+
+        const totalCommission = claims.filter(c => c.status !== 'Rejected' && c.status !== 'Paid')
+            .reduce((acc, c) => acc + (c.clientCount * 1000), 0);
+
+        res.json({
+            pendingCount: pending,
+            openTicketsCount: openT,
+            processedThisMonth: monthlyCount,
+            totalCommission: totalCommission
+        });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
