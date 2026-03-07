@@ -752,7 +752,8 @@
                             <label class="block text-sm font-medium text-slate-700 mb-1">Your Agent ID / Phone *</label>
                             <input type="text" id="ticketAgentId"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 outline-none"
-                                placeholder="So we can look up your account">
+                                placeholder="So we can look up your account" onchange="updateCurrentAgentId(this.value)"
+                                oninput="if(this.value.length > 5) updateCurrentAgentId(this.value)">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Your Email Address *</label>
@@ -951,11 +952,11 @@
 
                     const searchQuery = document.getElementById('searchClaims') ? document.getElementById('searchClaims').value : '';
                     const claimsRes = await backendFetch(`/claims?page=${currentClaimsPage}&search=${encodeURIComponent(searchQuery)}`);
-                    claims = claimsRes.data;
+                    claims = claimsRes.data || claimsRes;
                     claimsPagination = claimsRes.pagination;
 
                     const ticketsRes = await backendFetch(`/tickets?page=${currentTicketsPage}`);
-                    tickets = ticketsRes.data;
+                    tickets = ticketsRes.data || ticketsRes;
                     ticketsPagination = ticketsRes.pagination;
                 } else {
                     // Agent Refresh
@@ -978,6 +979,7 @@
                 renderSubmissions();
                 renderAdminTables();
                 renderTickets();
+                if (typeof renderMyTickets === 'function') renderMyTickets();
                 checkTicketBadge();
 
                 if (isAdmin) {
@@ -1308,6 +1310,14 @@
             if (currentAgentEmail) document.getElementById('ticketEmail').value = currentAgentEmail;
             if (currentAgentId) document.getElementById('ticketAgentId').value = currentAgentId;
             renderMyTickets();
+        };
+
+        window.updateCurrentAgentId = function (val) {
+            if (!val || val.trim() === currentAgentId) return;
+            currentAgentId = val.trim();
+            localStorage.setItem('asasu_agent_id', currentAgentId);
+            // Auto refresh calculations/tickets for this agent
+            refreshData();
         };
 
         window.closeTicketModal = function () {
